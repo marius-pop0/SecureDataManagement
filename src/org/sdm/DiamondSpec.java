@@ -17,8 +17,10 @@ public class DiamondSpec {
     private int cut;
     private int fluorescence;
     private String laserInscription;
+    private String origin;
+    private boolean natural;
 
-    public DiamondSpec(long date, int reportNr, String shape, double carot, double depth, double table, double girdleThickness, double culetSize, int polish, int symmetry, int clarity, int color, int cut, int fluorescence, String laserInscription) {
+    public DiamondSpec(long date, int reportNr, String shape, double carot, double depth, double table, double girdleThickness, double culetSize, int polish, int symmetry, int clarity, int color, int cut, int fluorescence, String laserInscription, String origin, boolean natural) {
         this.date = date;
         this.reportNr = reportNr;
         this.shape = shape;
@@ -34,6 +36,8 @@ public class DiamondSpec {
         this.cut = cut;
         this.fluorescence = fluorescence;
         this.laserInscription = laserInscription;
+        this.origin = origin;
+        this.natural = natural;
     }
 
     public long getDate() {
@@ -94,5 +98,13 @@ public class DiamondSpec {
 
     public String getLaserInscription() {
         return laserInscription;
+    }
+
+    public String getOrigin() {
+        return origin;
+    }
+
+    public boolean isNatural() {
+        return natural;
     }
 }
