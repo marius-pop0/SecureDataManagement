@@ -1,6 +1,5 @@
 package org.sdm;
 
-import javax.lang.model.type.NullType;
 import java.io.IOException;
 import java.time.Instant;
 
@@ -9,7 +8,7 @@ public class Main {
     public static void main(String[] args) {
 	// write your code here
         Blockchain blockchain= new Blockchain();
-        
+
         //DiamondSpec d = getDiamondInfo();
         DiamondSpec d = new DiamondSpec(Instant.now().getEpochSecond(),
                 1,
