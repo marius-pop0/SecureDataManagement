@@ -1,6 +1,10 @@
 package org.sdm;
 
-public class DiamondSpec {
+import com.sun.xml.internal.messaging.saaj.util.ByteInputStream;
+
+import java.io.*;
+
+public class DiamondSpec implements Serializable{
 
     private long date;
     private int reportNr;
@@ -20,7 +24,7 @@ public class DiamondSpec {
     private String origin;
     private boolean natural;
 
-    public DiamondSpec(long date, int reportNr, String shape, double carot, double depth, double table, double girdleThickness, double culetSize, int polish, int symmetry, int clarity, int color, int cut, int fluorescence, String laserInscription, String origin, boolean natural) {
+    public DiamondSpec (long date, int reportNr, String shape, double carot, double depth, double table, double girdleThickness, double culetSize, int polish, int symmetry, int clarity, int color, int cut, int fluorescence, String laserInscription, String origin, boolean natural) {
         this.date = date;
         this.reportNr = reportNr;
         this.shape = shape;
@@ -107,4 +111,24 @@ public class DiamondSpec {
     public boolean isNatural() {
         return natural;
     }
+
+    public byte[] getDiamondBytes() throws IOException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        ObjectOutputStream o = new ObjectOutputStream(bos);
+        o.writeObject(this);
+        o.flush();
+        byte[] bytes = bos.toByteArray();
+        bos.close();
+        return bytes;
+    }
+
+    public static DiamondSpec deserialize(byte[] bytes) throws IOException, ClassNotFoundException {
+        ByteInputStream bis = new ByteInputStream();
+        bis.read(bytes);
+        ObjectInputStream in = new ObjectInputStream(bis);
+        DiamondSpec obj = (DiamondSpec) in.readObject();
+        return obj;
+
+    }
+
 }
