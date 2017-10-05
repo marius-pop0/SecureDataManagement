@@ -5,9 +5,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * @author Mathew : 5/10/2017.
- */
+
 public class Blockchain {
 
 	private List<Block> blockchain;

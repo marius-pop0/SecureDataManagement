@@ -9,7 +9,7 @@ public class Main {
     public static void main(String[] args) {
 	// write your code here
         Blockchain blockchain= new Blockchain();
-        System.out.println("Hi");
+        
         //DiamondSpec d = getDiamondInfo();
         DiamondSpec d = new DiamondSpec(Instant.now().getEpochSecond(),
                 1,
