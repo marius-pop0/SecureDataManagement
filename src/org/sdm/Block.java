@@ -15,12 +15,12 @@ public class Block {
     private byte[] data;
     private String hash;
 
-    public Block(int index, String previousHash, long timestamp, byte[] data, String hash) {
+    public Block(int index, String previousHash, long timestamp, byte[] data) {
         this.index = index;
         this.previousHash = previousHash;
         this.timestamp = timestamp;
         this.data = data;
-        this.hash = hash;
+        this.hash = calculateHash();
     }
 
     public String calculateHash(){
@@ -52,6 +52,26 @@ public class Block {
 
         String hash = digest.digest(concatBytes).toString();
 
+        return hash;
+    }
+
+    public int getIndex() {
+        return index;
+    }
+
+    public String getPreviousHash() {
+        return previousHash;
+    }
+
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public byte[] getData() {
+        return data;
+    }
+
+    public String getHash() {
         return hash;
     }
 
