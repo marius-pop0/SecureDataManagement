@@ -1,6 +1,5 @@
 package org.sdm;
 
-import com.sun.xml.internal.messaging.saaj.util.ByteInputStream;
 
 import java.io.*;
 
@@ -123,8 +122,8 @@ public class DiamondSpec implements Serializable{
     }
 
     public static DiamondSpec deserialize(byte[] bytes) throws IOException, ClassNotFoundException {
-        ByteInputStream bis = new ByteInputStream();
-        bis.read(bytes);
+        ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+        //bis.read(bytes);
         ObjectInputStream in = new ObjectInputStream(bis);
         DiamondSpec obj = (DiamondSpec) in.readObject();
         return obj;

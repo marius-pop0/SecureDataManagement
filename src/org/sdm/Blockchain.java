@@ -14,6 +14,7 @@ public class Blockchain {
 
 	public Blockchain() {
 		this.blockchain = new ArrayList<>();
+		blockchain.add(createGenesysBlock());
 	}
 
 	public Block generateNewBlock(DiamondSpec d) throws IOException {
@@ -27,6 +28,29 @@ public class Blockchain {
 
 	private Block getLatestBlock() {
 		return blockchain.get(blockchain.size() - 1);
+	}
+
+	private static Block createGenesysBlock(){
+		long now = Instant.now().getEpochSecond();
+		return new Block(0,"Start",now,"0".getBytes());
+	}
+
+	public boolean addBlock(Block candidate){
+		if(isValidBlock(candidate)){
+			blockchain.add(candidate);
+			return true;
+		}
+		else {return false;}
+	}
+
+	private boolean isValidBlock(Block candidate){
+		if (getLatestBlock().getIndex()+1 != candidate.getIndex()){
+			return false;
+		}
+		else if (!getLatestBlock().getHash().equals(candidate.getPreviousHash())){
+			return false;
+		}
+		return true;
 	}
 
 }
