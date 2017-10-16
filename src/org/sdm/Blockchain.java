@@ -30,7 +30,7 @@ public class Blockchain {
 
 	private static Block createGenesysBlock(){
 		long now = Instant.now().getEpochSecond();
-		return new Block(0,"Start",now,"0".getBytes());
+		return new Block(0,"Start",now,"GenesisBlock".getBytes());
 	}
 
 	public boolean addBlock(Block candidate){
