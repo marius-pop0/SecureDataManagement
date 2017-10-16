@@ -44,10 +44,12 @@ public class Blockchain {
 	private boolean isValidBlock(Block candidate){
 		if (getLatestBlock().getIndex()+1 != candidate.getIndex()){
 			return false;
-		}
-		else if (!getLatestBlock().getHash().equals(candidate.getPreviousHash())){
+		} else if (!getLatestBlock().getHash().equals(candidate.getPreviousHash())){
+			return false;
+		} else if (!candidate.calculateHash().equals(candidate.getHash())) {
 			return false;
 		}
+		
 		return true;
 	}
 
