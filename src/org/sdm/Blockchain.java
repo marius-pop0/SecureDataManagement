@@ -12,7 +12,7 @@ public class Blockchain {
 
 	public Blockchain() {
 		this.blockchain = new ArrayList<>();
-		blockchain.add(createGenesysBlock());
+		blockchain.add(createGenesisBlock());
 	}
 
 	public Block generateNewBlock(DiamondSpec d) throws IOException {
@@ -28,28 +28,60 @@ public class Blockchain {
 		return blockchain.get(blockchain.size() - 1);
 	}
 
-	private static Block createGenesysBlock(){
+	private static Block createGenesisBlock() {
 		long now = Instant.now().getEpochSecond();
-		return new Block(0,"Start",now,"GenesisBlock".getBytes());
+		StringBuilder previousHash = new StringBuilder();
+		for (int i = 0; i < 64; i++) {
+			previousHash.append("0");
+		}
+
+		DiamondSpec d = new DiamondSpec(Instant.now().getEpochSecond(),
+				-1,
+				"",
+				-1,
+				-1,
+				-1,
+				-1,
+				-1,
+				-1,
+				-1,
+				-1,
+				-1,
+				-1,
+				-1,
+				"",
+				"",
+				false);
+
+		byte[] bytes = null;
+
+		try {
+			bytes = d.getDiamondBytes();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		return new Block(0, previousHash.toString(), now, bytes);
 	}
 
-	public boolean addBlock(Block candidate){
-		if(isValidBlock(candidate)){
+	public boolean addBlock(Block candidate) {
+		if (isValidBlock(candidate)) {
 			blockchain.add(candidate);
 			return true;
+		} else {
+			return false;
 		}
-		else {return false;}
 	}
 
-	private boolean isValidBlock(Block candidate){
-		if (getLatestBlock().getIndex()+1 != candidate.getIndex()){
+	private boolean isValidBlock(Block candidate) {
+		if (getLatestBlock().getIndex() + 1 != candidate.getIndex()) {
 			return false;
-		} else if (!getLatestBlock().getHash().equals(candidate.getPreviousHash())){
+		} else if (!getLatestBlock().getHash().equals(candidate.getPreviousHash())) {
 			return false;
 		} else if (!candidate.calculateHash().equals(candidate.getHash())) {
 			return false;
 		}
-		
+
 		return true;
 	}
 
