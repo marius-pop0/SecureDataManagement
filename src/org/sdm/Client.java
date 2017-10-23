@@ -1,6 +1,8 @@
 package org.sdm;
 
+import java.io.*;
 import java.math.BigInteger;
+import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -60,8 +62,30 @@ public class Client {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		
+
+		try {
+
+			Socket myClinet = new Socket("localhost", 9999);
+			DataInputStream inputStream = new DataInputStream(myClinet.getInputStream());
+			DataOutputStream outputStream = new DataOutputStream(myClinet.getOutputStream());
+
+			//BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+
+			outputStream.writeUTF("Hello");
+			outputStream.flush();
+			outputStream.writeUTF("bye");
+
+			outputStream.close();
+			inputStream.close();
+			myClinet.close();
+		}
+		catch (IOException e){
+			System.err.println("Unable to connect to BlockChain Server");
+		}
+
+
+
+
 	}
 
 	private final static char[] hexArray = "0123456789ABCDEF".toCharArray();

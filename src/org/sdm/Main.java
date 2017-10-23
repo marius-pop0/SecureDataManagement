@@ -1,6 +1,10 @@
 package org.sdm;
 
-import java.io.IOException;
+import com.sun.security.ntlm.Server;
+
+import java.io.*;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.time.Instant;
 
 public class Main {
@@ -35,6 +39,20 @@ public class Main {
 
 		} catch (IOException e) {
 			e.printStackTrace();
+		}
+
+		try{
+			ServerSocket server = new ServerSocket(9999);
+			while (true){
+
+				Socket serverClient = server.accept();
+				ServerClientThread connection = new ServerClientThread(serverClient);
+				connection.start();
+
+			}
+
+		}catch (Exception e){
+			System.err.println(e);
 		}
 
 
