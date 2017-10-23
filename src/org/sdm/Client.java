@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.time.Instant;
 
 import org.bouncycastle.asn1.sec.SECNamedCurves;
 import org.bouncycastle.asn1.x9.X9ECParameters;
@@ -71,7 +72,33 @@ public class Client {
 
 			//BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 
+			DiamondSpec d = new DiamondSpec(Instant.now().getEpochSecond(),
+					1,
+					"round",
+					1.22,
+					0.23,
+					.55,
+					1.22,
+					.98,
+					2,
+					2,
+					2,
+					4,
+					2,
+					4,
+					"First Diamond",
+					"Canada,",
+					true);
+
+			byte[] bytes = d.getDiamondBytes();
+			int size = bytes.length;
+
+
 			outputStream.writeUTF("Hello");
+			outputStream.writeUTF("d");
+			outputStream.writeInt(size);
+			outputStream.flush();
+			outputStream.write(bytes);
 			outputStream.flush();
 			outputStream.writeUTF("bye");
 
