@@ -9,10 +9,15 @@ import java.util.List;
 public class Blockchain {
 
 	private List<Block> blockchain;
+	private final static Blockchain INSTANCE = new Blockchain();
 
-	public Blockchain() {
+	private Blockchain() {
 		this.blockchain = new ArrayList<>();
 		blockchain.add(createGenesisBlock());
+	}
+
+	public static Blockchain getInstance() {
+		return INSTANCE;
 	}
 
 	public Block generateNewBlock(DiamondSpec d) throws IOException {
@@ -24,7 +29,7 @@ public class Blockchain {
 		return next;
 	}
 
-	private Block getLatestBlock() {
+	public Block getLatestBlock() {
 		return blockchain.get(blockchain.size() - 1);
 	}
 

@@ -1,14 +1,5 @@
 package org.sdm;
 
-import java.io.*;
-import java.math.BigInteger;
-import java.net.Socket;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.time.Instant;
-
 import org.bouncycastle.asn1.sec.SECNamedCurves;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
@@ -18,7 +9,15 @@ import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.ECKeyGenerationParameters;
 import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
-import org.bouncycastle.math.ec.ECPoint;
+
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.Socket;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.time.Instant;
 
 public class Client {
 
@@ -50,14 +49,14 @@ public class Client {
 		//ECPoint Q = domainParams.getG().multiply(new BigInteger(privateKeyBytes));
 		//System.out.println("Calculated public key: " + bytesToHex(Q.getEncoded(true)));
 
-		
+
 		try {
 			byte[] ph = new byte[20];
-			byte[] sha256 = MessageDigest.getInstance ("SHA-256").digest (publicKey.getQ().getEncoded(true));
-			RIPEMD160Digest digest = new RIPEMD160Digest ();
-			digest.update (sha256, 0, sha256.length);
-			digest.doFinal (ph, 0);
-			
+			byte[] sha256 = MessageDigest.getInstance("SHA-256").digest(publicKey.getQ().getEncoded(true));
+			RIPEMD160Digest digest = new RIPEMD160Digest();
+			digest.update(sha256, 0, sha256.length);
+			digest.doFinal(ph, 0);
+
 			System.out.println("BC Address: " + bytesToHex(ph));
 		} catch (NoSuchAlgorithmException e) {
 			// TODO Auto-generated catch block
@@ -105,12 +104,9 @@ public class Client {
 			outputStream.close();
 			inputStream.close();
 			myClinet.close();
-		}
-		catch (IOException e){
+		} catch (IOException e) {
 			System.err.println("Unable to connect to BlockChain Server");
 		}
-
-
 
 
 	}

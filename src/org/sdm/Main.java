@@ -10,7 +10,7 @@ import java.time.Instant;
 public class Main {
 
 	public static void main(String[] args) {
-		Blockchain blockchain = new Blockchain();
+		Blockchain blockchain = Blockchain.getInstance();
 
 		DiamondSpec d = new DiamondSpec(Instant.now().getEpochSecond(),
 				1,
