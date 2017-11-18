@@ -8,8 +8,10 @@ import java.math.BigInteger;
 import java.util.Arrays;
 
 import org.bouncycastle.asn1.x9.X9ECParameters;
+import org.bouncycastle.crypto.Signer;
 import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
+import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.crypto.signers.ECDSASigner;
 import org.bouncycastle.crypto.signers.HMacDSAKCalculator;
 import org.bouncycastle.math.ec.custom.sec.SecP256K1Curve;
@@ -17,14 +19,22 @@ import org.bouncycastle.math.ec.custom.sec.SecP256K1Curve;
 
 public class Transfer{
 
-    private ECPrivateKeyParameters privKey;
-    public DiamondSpec diamondSpec;
-    public byte[] destinationAddress;
+    private ECPrivateKeyParameters privKey=null;
+    public ECPublicKeyParameters pubKey=null;
+    public byte[] message=null;
+    public byte[] sig=null;
+    public DiamondSpec diamondSpec=null;
+    public byte[] destinationAddress=null;
 
     public Transfer(ECPrivateKeyParameters privKey,DiamondSpec diamondSpec, byte[] destinationAddress){
         this.privKey=privKey;
         this.diamondSpec=diamondSpec;
         this.destinationAddress=destinationAddress;
+    }
+    public Transfer(ECPublicKeyParameters pubKey,byte[] message, byte[] sig){
+        this.pubKey=pubKey;
+        this.message=message;
+        this.sig=sig;
     }
 
      public void signAndSend(DataOutputStream outputStream) throws IOException {
@@ -53,11 +63,19 @@ public class Transfer{
      }
 
 
-     public boolean checkSignedMessage(byte[] message){
+     public boolean checkSignedMessage(DataOutputStream outputStream){
 
+        ECDSASigner signer = new ECDSASigner();
+        signer.init(false,pubKey);
 
+         byte[] rBytes = Arrays.copyOfRange(sig,0,32);
+         byte[] sBytes = Arrays.copyOfRange(sig,32,65);
+         BigInteger r = new BigInteger(rBytes);
+         BigInteger s = new BigInteger(sBytes);
 
-        return false;
+         BigInteger[] signature = new BigInteger[] {r,s};
+
+        return signer.verifySignature(message,signature[0],signature[1]);
      }
 
     //Signature Wrapper
@@ -100,7 +118,6 @@ public class Transfer{
             byte[] sigR = r.toByteArray();
             byte[] sigS = s.toByteArray();
 
-            System.out.println(sigR.length+" "+sigS.length);
 
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             outputStream.write(sigR);
@@ -109,13 +126,6 @@ public class Transfer{
             return (outputStream.toByteArray());
         }
 
-        public BigInteger[] parseSig(byte[] sigBytes){
-            byte[] rBytes = Arrays.copyOfRange(sigBytes,0,32);
-            byte[] sBytes = Arrays.copyOfRange(sigBytes,32,65);
-            BigInteger r = new BigInteger(rBytes);
-            BigInteger s = new BigInteger(sBytes);
-            return new BigInteger[] { r, s };
         }
-    }
 }
 

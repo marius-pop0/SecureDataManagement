@@ -28,10 +28,10 @@ public class Client {
 		System.out.println("User is up");
 
 		X9ECParameters ecp = SECNamedCurves.getByName("secp256k1");
-		ECDomainParameters domainParams = new ECDomainParameters(ecp.getCurve(), ecp.getG(), ecp.getN(), ecp.getH(),
-				ecp.getSeed());
+		ECDomainParameters domainParams = new ECDomainParameters(ecp.getCurve(), ecp.getG(), ecp.getN(), ecp.getH(), ecp.getSeed());
 		// Generate a private key and a public key
-		AsymmetricCipherKeyPair keyPair;
+
+        AsymmetricCipherKeyPair keyPair;
 		ECKeyGenerationParameters keyGenParams = new ECKeyGenerationParameters(domainParams, new SecureRandom());
 		ECKeyPairGenerator generator = new ECKeyPairGenerator();
 		generator.init(keyGenParams);
@@ -70,6 +70,9 @@ public class Client {
 			DataInputStream inputStream = new DataInputStream(myClinet.getInputStream());
 			DataOutputStream outputStream = new DataOutputStream(myClinet.getOutputStream());
 
+
+
+
 			//BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 
 			DiamondSpec d = new DiamondSpec(Instant.now().getEpochSecond(),
@@ -93,6 +96,10 @@ public class Client {
 			byte[] bytes = d.getDiamondBytes();
 			int size = bytes.length;
 
+			Transfer transfer = new Transfer(privateKey,d,"576E4190F528B1767D78046BB3A94F0579B3102A".getBytes("utf-8"));
+
+			transfer.signAndSend(outputStream);
+			transfer.checkSignedMessage(publicKey,,)
 
 			outputStream.writeUTF("Hello");
 			outputStream.writeUTF("d");

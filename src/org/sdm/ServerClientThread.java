@@ -12,7 +12,7 @@ class ServerClientThread extends Thread {
     ServerClientThread(Socket inSocket){
         serverClient = inSocket;
     }
-    public void run(){
+    public void run(Blockchain blockchain){
         try{
             DataInputStream inStream = new DataInputStream(serverClient.getInputStream());
             DataOutputStream outStream = new DataOutputStream(serverClient.getOutputStream());

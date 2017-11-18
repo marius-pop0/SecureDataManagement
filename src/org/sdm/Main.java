@@ -47,7 +47,8 @@ public class Main {
 
 				Socket serverClient = server.accept();
 				ServerClientThread connection = new ServerClientThread(serverClient);
-				connection.start();
+				connection.run(blockchain);
+
 
 			}
 
