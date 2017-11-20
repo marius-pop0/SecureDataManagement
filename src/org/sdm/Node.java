@@ -181,10 +181,6 @@ public class Node {
 		return publicKey;
 	}
 
-	public void addTransactionToQueue(Transaction transaction) {
-		this.pendingTransactions.add(transaction);
-	}
-
 	public Blockchain getBlockchain() {
 		return blockchain;
 	}
