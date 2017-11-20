@@ -137,12 +137,70 @@ public class DiamondSpec implements Serializable {
 		return bytes;
 	}
 
-	public static DiamondSpec deserialize(byte[] bytes) throws IOException, ClassNotFoundException {
-		ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
-		//bis.read(bytes);
-		ObjectInputStream in = new ObjectInputStream(bis);
-		return (DiamondSpec) in.readObject();
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
 
+		DiamondSpec that = (DiamondSpec) o;
+
+		if (date != that.date) return false;
+		if (reportNr != that.reportNr) return false;
+		if (Double.compare(that.carot, carot) != 0) return false;
+		if (Double.compare(that.depth, depth) != 0) return false;
+		if (Double.compare(that.table, table) != 0) return false;
+		if (Double.compare(that.girdleThickness, girdleThickness) != 0) return false;
+		if (Double.compare(that.culetSize, culetSize) != 0) return false;
+		if (polish != that.polish) return false;
+		if (symmetry != that.symmetry) return false;
+		if (clarity != that.clarity) return false;
+		if (color != that.color) return false;
+		if (cut != that.cut) return false;
+		if (fluorescence != that.fluorescence) return false;
+		if (natural != that.natural) return false;
+		if (!shape.equals(that.shape)) return false;
+		if (!laserInscription.equals(that.laserInscription)) return false;
+		return origin.equals(that.origin);
+	}
+
+	@Override
+	public int hashCode() {
+		int result;
+		long temp;
+		result = (int) (date ^ (date >>> 32));
+		result = 31 * result + reportNr;
+		result = 31 * result + shape.hashCode();
+		temp = Double.doubleToLongBits(carot);
+		result = 31 * result + (int) (temp ^ (temp >>> 32));
+		temp = Double.doubleToLongBits(depth);
+		result = 31 * result + (int) (temp ^ (temp >>> 32));
+		temp = Double.doubleToLongBits(table);
+		result = 31 * result + (int) (temp ^ (temp >>> 32));
+		temp = Double.doubleToLongBits(girdleThickness);
+		result = 31 * result + (int) (temp ^ (temp >>> 32));
+		temp = Double.doubleToLongBits(culetSize);
+		result = 31 * result + (int) (temp ^ (temp >>> 32));
+		result = 31 * result + polish;
+		result = 31 * result + symmetry;
+		result = 31 * result + clarity;
+		result = 31 * result + color;
+		result = 31 * result + cut;
+		result = 31 * result + fluorescence;
+		result = 31 * result + laserInscription.hashCode();
+		result = 31 * result + origin.hashCode();
+		result = 31 * result + (natural ? 1 : 0);
+		return result;
+	}
+
+	public static DiamondSpec deserialize(byte[] bytes) {
+		DiamondSpec d = null;
+		try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+			 ObjectInputStream in = new ObjectInputStream(bis)) {
+			d = (DiamondSpec) in.readObject();
+		} catch (IOException | ClassNotFoundException e) {
+			e.printStackTrace();
+		}
+		return d;
 	}
 
 }

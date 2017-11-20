@@ -1,23 +1,19 @@
 package org.sdm;
 
-import org.bouncycastle.asn1.sec.SECNamedCurves;
-import org.bouncycastle.asn1.x9.X9ECParameters;
-import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
-import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
-import org.bouncycastle.crypto.params.ECDomainParameters;
-import org.bouncycastle.crypto.params.ECKeyGenerationParameters;
-import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
-import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.sdm.concurrent.ListenForNodesTask;
-import org.sdm.crypto.Signature;
+import org.sdm.concurrent.MonitorTransactionQueueTask;
+import org.sdm.message.Message;
 
-import java.math.BigInteger;
-import java.nio.ByteBuffer;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.util.Arrays;
+import java.io.IOException;
+import java.net.Socket;
+import java.security.*;
+import java.security.spec.ECGenParameterSpec;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -28,77 +24,181 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class Node {
 
 	private final ExecutorService pool;
-	private final ConcurrentHashMap<String, NodeSocket> nodes;
+	private final Map<String, NodeSocket> nodes;
 	private AtomicBoolean isListening;
+	private Deque<Transaction> pendingTransactions;
 
-	private ECPublicKeyParameters pubKey;
-	private ECPrivateKeyParameters privKey;
+	private PublicKey publicKey;
+	private PrivateKey privKey;
 
-	public Node() {
+	private Blockchain blockchain;
+
+	private final Object lock = new Object();
+
+	public Node(int port) {
 		this.nodes = new ConcurrentHashMap<>();
 		this.pool = Executors.newCachedThreadPool();
 		this.isListening = new AtomicBoolean(true);
+		this.pendingTransactions = new ConcurrentLinkedDeque<>();
+		this.blockchain = new Blockchain();
 
 		generateKeys();
 
-		listenForNodes();
+		listenForNodes(port);
+		monitorTransactions();
+
+		Runtime.getRuntime().addShutdownHook(new Thread(pool::shutdown));
 	}
 
 	private void generateKeys() {
-		X9ECParameters ecp = SECNamedCurves.getByName("secp256k1");
-		ECDomainParameters domainParams = new ECDomainParameters(ecp.getCurve(), ecp.getG(), ecp.getN(), ecp.getH(),
-				ecp.getSeed());
-		// Generate a private key and a public key
-		AsymmetricCipherKeyPair keyPair;
-		ECKeyGenerationParameters keyGenParams = new ECKeyGenerationParameters(domainParams, new SecureRandom());
-		ECKeyPairGenerator generator = new ECKeyPairGenerator();
-		generator.init(keyGenParams);
-		keyPair = generator.generateKeyPair();
-
-		ECPrivateKeyParameters privateKey = (ECPrivateKeyParameters) keyPair.getPrivate();
-		ECPublicKeyParameters publicKey = (ECPublicKeyParameters) keyPair.getPublic();
-
-		this.pubKey = publicKey;
-		this.privKey = privateKey;
-	}
-
-	private void listenForNodes() {
-		pool.execute(() -> new ListenForNodesTask(this, pool, nodes));
-	}
-
-	private void listenForTransactions() {
-
-	}
-
-	public void receiveTransaction(Transaction transaction) {
-		Block latestBlock = Blockchain.getInstance().getLatestBlock();
-		byte[] hash = new BigInteger(latestBlock.getHash(), 16).toByteArray();
-		byte[] signature = new Signature().generateSignature(privKey, hash);
-		double hit = -1;
-
+		ECGenParameterSpec paramSpec = new ECGenParameterSpec("secp256k1");
+		KeyPairGenerator keygen = null;
 		try {
-			byte[] val = MessageDigest.getInstance("SHA-256").digest(signature);
-			byte[] first8 = Arrays.copyOfRange(val, 0, 8);
-			hit = ByteBuffer.wrap(first8).getDouble();
-
-		} catch (NoSuchAlgorithmException e) {
+			keygen = KeyPairGenerator.getInstance("ECDSA", "BC");
+			keygen.initialize(paramSpec, new SecureRandom());
+		} catch (NoSuchAlgorithmException | InvalidAlgorithmParameterException | NoSuchProviderException e) {
 			e.printStackTrace();
 		}
 
-		//TODO: calculate target
+		assert keygen != null;
+		KeyPair pair = keygen.generateKeyPair();
+		PublicKey publicKey = pair.getPublic();
+		PrivateKey privateKey = pair.getPrivate();
 
-		double target;
-		do {
-			target = Double.MAX_VALUE;
-		} while (hit >= target);
+		this.publicKey = publicKey;
+		this.privKey = privateKey;
 
-		for (NodeSocket node : nodes.values()) {
+		//TODO: announce public key to server
+	}
 
+	public void connectToNode(int port) {
+		try {
+			Socket socket = new Socket("localhost", port);
+			NodeSocket nodeSocket = new NodeSocket(socket);
+			//TODO: ADDRESS!!!!!
+			nodes.put("address", nodeSocket);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void sendDiamond(DiamondSpec diamond, byte[] address) {
+		Transaction transaction = new Transaction(diamond, address);
+		broadcastTransaction(transaction);
+	}
+
+	private void broadcastTransaction(Transaction transaction) {
+		transaction.sign(this.privKey);
+		Message msg = new Message("tx", transaction);
+		for (NodeSocket socket : nodes.values()) {
+			try {
+				socket.getObjectOutputStream().writeObject(msg);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	private void broadcastChain(List<Block> chain) {
+		Message msg = new Message("chain", chain);
+		for (NodeSocket socket : nodes.values()) {
+			try {
+				socket.getObjectOutputStream().writeObject(msg);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	public void broadcastBlock(Block block) {
+		ArrayList<Block> list = new ArrayList<>(1);
+		list.add(block);
+		broadcastChain(list);
+	}
+
+	private void queryBlockchain() {
+		Message msg = new Message("query", null);
+		for (NodeSocket socket : nodes.values()) {
+			try {
+				socket.getObjectOutputStream().writeObject(msg);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	private void listenForNodes(int port) {
+		pool.execute(() -> new ListenForNodesTask(this, port, pool, nodes));
+	}
+
+	private void monitorTransactions() {
+		pool.execute(() -> new MonitorTransactionQueueTask(this, pendingTransactions));
+	}
+
+	public void processNewTransaction(Transaction t) {
+		for (Transaction tx : pendingTransactions) {
+			if (tx.equals(t)) return;
+			if (tx.getDiamond().equals(t.getDiamond())) return;
+			//TODO: For each input, if the referenced output exists in any other tx in the pool, reject this transaction
+			//TODO: rest of transaction checks
+		}
+
+		pendingTransactions.add(t);
+//		broadcastTransaction(t);	//TODO: necessary?
+	}
+
+	public void processNewChain(List<Block> chain) {
+		synchronized (lock) {
+			if (chain.size() < 1) throw new IllegalArgumentException("list must not be empty");
+			Block latestBlockReceived = chain.get(chain.size() - 1);
+			Block latestBlock = blockchain.getLatestBlock();
+
+			if (latestBlockReceived.getIndex() > latestBlock.getIndex()) {
+
+				if (latestBlock.getHash().equals(latestBlockReceived.getPreviousHash())) {
+					blockchain.addBlock(latestBlockReceived);
+					Transaction t = Transaction.deserialize(latestBlockReceived.getData());
+					pendingTransactions.remove(t);
+
+					ArrayList<Block> latest = new ArrayList<>(1);
+					latest.add(latestBlockReceived);
+					broadcastChain(latest);
+				} else if (chain.size() == 1) {
+					queryBlockchain();
+				} else {
+					blockchain.replaceChain(chain);
+				}
+
+			}
 		}
 	}
 
 	public boolean isListening() {
 		return this.isListening.get();
+	}
+
+	public PublicKey getPublicKey() {
+		return publicKey;
+	}
+
+	public void addTransactionToQueue(Transaction transaction) {
+		this.pendingTransactions.add(transaction);
+	}
+
+	public Blockchain getBlockchain() {
+		return blockchain;
+	}
+
+	public void shutdown() {
+		isListening.set(false);
+		pool.shutdown();
+		for (NodeSocket socket : nodes.values()) {
+			try {
+				socket.getSocket().close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
 }

@@ -1,6 +1,5 @@
 package org.sdm;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -9,32 +8,26 @@ import java.util.List;
 public class Blockchain {
 
 	private List<Block> blockchain;
-	private final static Blockchain INSTANCE = new Blockchain();
 
-	private Blockchain() {
+	public Blockchain() {
 		this.blockchain = new ArrayList<>();
 		blockchain.add(createGenesisBlock());
 	}
 
-	public static Blockchain getInstance() {
-		return INSTANCE;
-	}
-
-	public Block generateNewBlock(DiamondSpec d) throws IOException {
+	public synchronized Block generateNewBlock(Transaction t) {
 		Block latest = getLatestBlock();
 		int nextIndex = blockchain.size();
 		long nextTimestamp = Instant.now().getEpochSecond();
-		byte[] data = d.getDiamondBytes();
-		Block next = new Block(nextIndex, latest.getHash(), nextTimestamp, data);
-		return next;
+		byte[] data = t.getTransactionBytes();
+		return new Block(nextIndex, latest.getHash(), nextTimestamp, data);
 	}
 
-	public Block getLatestBlock() {
+	public synchronized Block getLatestBlock() {
 		return blockchain.get(blockchain.size() - 1);
 	}
 
-	private static Block createGenesisBlock() {
-		long now = Instant.now().getEpochSecond();
+	private synchronized static Block createGenesisBlock() {
+		long genesis = 1510398671L; //11-11-2017 11:11:11 GMT
 		StringBuilder previousHash = new StringBuilder();
 		for (int i = 0; i < 64; i++) {
 			previousHash.append("0");
@@ -58,18 +51,14 @@ public class Blockchain {
 				"",
 				false);
 
-		byte[] bytes = null;
+		Transaction t = new Transaction(d, new byte[]{0});
 
-		try {
-			bytes = d.getDiamondBytes();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		byte[] bytes = t.getTransactionBytes();
 
-		return new Block(0, previousHash.toString(), now, bytes);
+		return new Block(0, previousHash.toString(), genesis, bytes);
 	}
 
-	public boolean addBlock(Block candidate) {
+	public synchronized boolean addBlock(Block candidate) {
 		if (isValidBlock(candidate)) {
 			blockchain.add(candidate);
 			return true;
@@ -78,16 +67,46 @@ public class Blockchain {
 		}
 	}
 
-	private boolean isValidBlock(Block candidate) {
-		if (getLatestBlock().getIndex() + 1 != candidate.getIndex()) {
+	public List<Block> getChain() {
+		return blockchain;
+	}
+
+	public synchronized void replaceChain(List<Block> newChain) {
+		if (!isValidChain(newChain)) throw new IllegalArgumentException("new chain is invalid.");
+		if (blockchain.size() >= newChain.size()) throw new IllegalArgumentException("new chain not longer.");
+
+		blockchain.clear();
+		blockchain.addAll(newChain);
+	}
+
+	private boolean isValidChain(List<Block> chain) {
+		Block genesisBlock = createGenesisBlock();
+		Block firstBlock = chain.get(0);
+		if (!firstBlock.equals(genesisBlock)) return false;
+
+		for (int i = 1; i < chain.size(); i++) {
+			Block prev = chain.get(i - 1);
+			Block curr = chain.get(i);
+			if (!isValidBlock(prev, curr)) return false;
+		}
+
+		return true;
+	}
+
+	private synchronized boolean isValidBlock(Block latest, Block candidate) {
+		if (latest.getIndex() + 1 != candidate.getIndex()) {
 			return false;
-		} else if (!getLatestBlock().getHash().equals(candidate.getPreviousHash())) {
+		} else if (!latest.getHash().equals(candidate.getPreviousHash())) {
 			return false;
 		} else if (!candidate.calculateHash().equals(candidate.getHash())) {
 			return false;
 		}
 
 		return true;
+	}
+
+	private synchronized boolean isValidBlock(Block candidate) {
+		return isValidBlock(getLatestBlock(), candidate);
 	}
 
 }

@@ -23,11 +23,11 @@ public class ListenForNodesTask implements Runnable {
 	private Map<String, NodeSocket> nodes;
 	private ExecutorService pool;
 
-	public ListenForNodesTask(Node node, ExecutorService pool, Map<String, NodeSocket> nodes) {
+	public ListenForNodesTask(Node node, int port, ExecutorService pool, Map<String, NodeSocket> nodes) {
 		this.node = node;
 		this.pool = pool;
 		try {
-			this.serverSocket = new ServerSocket(9999);
+			this.serverSocket = new ServerSocket(port);
 		} catch (IOException e) {
 			e.printStackTrace();
 			return;
@@ -43,7 +43,6 @@ public class ListenForNodesTask implements Runnable {
 		while (this.node.isListening()) {
 			try {
 				socket = serverSocket.accept();
-				socket.setSoTimeout(5000);
 				NodeSocket nodeSocket = new NodeSocket(socket);
 				in = socket.getInputStream();
 				reader = new BufferedReader(new InputStreamReader(in));
@@ -52,7 +51,7 @@ public class ListenForNodesTask implements Runnable {
 				nodes.put(id, nodeSocket);
 				System.out.println(id + " CONNECTED");
 
-				pool.execute(new TransactionReceiveTask(node, nodeSocket));
+				pool.execute(new ListenForMessagesTask(node, nodeSocket));
 			} catch (SocketTimeoutException e) {
 				System.out.println("timeout");
 				try {
@@ -66,7 +65,7 @@ public class ListenForNodesTask implements Runnable {
 			}
 		}
 
-		for(NodeSocket node : nodes.values()) {
+		for (NodeSocket node : nodes.values()) {
 			try {
 				node.getSocket().close();
 			} catch (IOException e) {

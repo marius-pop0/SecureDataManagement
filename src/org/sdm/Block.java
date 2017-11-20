@@ -3,11 +3,13 @@ package org.sdm;
 import javax.xml.bind.DatatypeConverter;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 
-public class Block {
+public class Block implements Serializable {
 
 	private int index;
 	private String previousHash;
@@ -37,7 +39,7 @@ public class Block {
 		String hash;
 		byte[] concatBytes = null;
 
-		try(ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+		try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
 			outputStream.write(index);
 			outputStream.write(previousHash.getBytes(StandardCharsets.UTF_8));
 			outputStream.write(timestamp);
@@ -71,5 +73,27 @@ public class Block {
 		return hash;
 	}
 
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
 
+		Block block = (Block) o;
+
+		if (index != block.index) return false;
+		if (timestamp != block.timestamp) return false;
+		if (!previousHash.equals(block.previousHash)) return false;
+		if (!Arrays.equals(data, block.data)) return false;
+		return hash.equals(block.hash);
+	}
+
+	@Override
+	public int hashCode() {
+		int result = index;
+		result = 31 * result + previousHash.hashCode();
+		result = 31 * result + (int) (timestamp ^ (timestamp >>> 32));
+		result = 31 * result + Arrays.hashCode(data);
+		result = 31 * result + hash.hashCode();
+		return result;
+	}
 }

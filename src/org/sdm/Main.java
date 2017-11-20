@@ -10,7 +10,7 @@ import java.time.Instant;
 public class Main {
 
 	public static void main(String[] args) {
-		Blockchain blockchain = Blockchain.getInstance();
+		Blockchain blockchain = new Blockchain();
 
 		DiamondSpec d = new DiamondSpec(Instant.now().getEpochSecond(),
 				1,
@@ -30,15 +30,12 @@ public class Main {
 				"Canada,",
 				true);
 
-		try {
-			boolean valid = false;
-			while (!valid) {
-				Block b = blockchain.generateNewBlock(d);
-				valid = blockchain.addBlock(b);
-			}
+		Transaction t = new Transaction(d, null);
 
-		} catch (IOException e) {
-			e.printStackTrace();
+		boolean valid = false;
+		while (!valid) {
+			Block b = blockchain.generateNewBlock(t);
+			valid = blockchain.addBlock(b);
 		}
 
 		try{
