@@ -8,10 +8,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.security.*;
 import java.security.spec.ECGenParameterSpec;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutorService;
@@ -29,7 +26,10 @@ public class Node {
 	private Deque<Transaction> pendingTransactions;
 
 	private PublicKey publicKey;
-	private PrivateKey privKey;
+	private PrivateKey privateKey;
+
+	private byte[] address;
+	private Wallet wallet;
 
 	private Blockchain blockchain;
 
@@ -43,9 +43,12 @@ public class Node {
 		this.blockchain = new Blockchain();
 
 		generateKeys();
+		generateAddress();
 
 		listenForNodes(port);
 		monitorTransactions();
+
+		this.wallet = new Wallet(this, this.publicKey, this.privateKey);
 
 		Runtime.getRuntime().addShutdownHook(new Thread(pool::shutdown));
 	}
@@ -66,13 +69,18 @@ public class Node {
 		PrivateKey privateKey = pair.getPrivate();
 
 		this.publicKey = publicKey;
-		this.privKey = privateKey;
+		this.privateKey = privateKey;
 
 		//TODO: announce public key to server
 	}
 
 	private void generateAddress() {
-		//TODO: generate address
+		try {
+			MessageDigest digest = MessageDigest.getInstance("SHA-256");
+			this.address = digest.digest(publicKey.getEncoded());
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public void connectToNode(int port) {
@@ -92,7 +100,7 @@ public class Node {
 	}
 
 	private void broadcastTransaction(Transaction transaction) {
-		transaction.sign(this.privKey);
+		transaction.sign(this.privateKey);
 		Message msg = new Message("tx", transaction);
 		for (NodeSocket socket : nodes.values()) {
 			try {
@@ -183,6 +191,18 @@ public class Node {
 
 	public PublicKey getPublicKey() {
 		return publicKey;
+	}
+
+	public byte[] getAddress() {
+		return address;
+	}
+
+	public String getAddressBase64() {
+		return Base64.getEncoder().encodeToString(address);
+	}
+
+	public Wallet getWallet() {
+		return wallet;
 	}
 
 	public Blockchain getBlockchain() {

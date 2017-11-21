@@ -34,7 +34,7 @@ public class MonitorTransactionQueueTask implements Runnable {
 
 				long hit = calculateHit();
 				long target;
-				long balance = 1;    //TODO: use actual balance
+				long balance = node.getWallet().getOwnedDiamonds().size();
 
 				while (node.isListening() && transactions.contains(t)) {
 					long prevTimestamp = node.getBlockchain().getLatestBlock().getTimestamp();

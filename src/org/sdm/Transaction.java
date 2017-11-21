@@ -22,6 +22,11 @@ public class Transaction implements Serializable {
 
 	public void sign(PrivateKey privateKey) {
 		Signer ts = new Signer();
+		byte[] concat = getData();
+		signature = ts.generateSignature(privateKey, concat);
+	}
+
+	public byte[] getData() {
 		byte[] diamondBytes = new byte[0];
 		try {
 			diamondBytes = diamond.getDiamondBytes();
@@ -31,8 +36,7 @@ public class Transaction implements Serializable {
 		byte[] concat = new byte[destinationAddress.length + diamondBytes.length];
 		System.arraycopy(destinationAddress, 0, concat, 0, destinationAddress.length);
 		System.arraycopy(diamondBytes, 0, concat, destinationAddress.length, diamondBytes.length);
-
-		signature = ts.generateSignature(privateKey, concat);
+		return concat;
 	}
 
 	public byte[] getSignature() {
@@ -66,6 +70,10 @@ public class Transaction implements Serializable {
 
 	public DiamondSpec getDiamond() {
 		return diamond;
+	}
+
+	public byte[] getDestinationAddress() {
+		return destinationAddress;
 	}
 
 	@Override
