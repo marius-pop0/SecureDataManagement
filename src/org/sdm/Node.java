@@ -71,11 +71,15 @@ public class Node {
 		//TODO: announce public key to server
 	}
 
+	private void generateAddress() {
+		//TODO: generate address
+	}
+
 	public void connectToNode(int port) {
 		try {
 			Socket socket = new Socket("localhost", port);
 			NodeSocket nodeSocket = new NodeSocket(socket);
-			//TODO: ADDRESS!!!!!
+			//TODO: ADDRESS!!!!! ALSO WALLET!!!
 			nodes.put("address", nodeSocket);
 		} catch (IOException e) {
 			e.printStackTrace();

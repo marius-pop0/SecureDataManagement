@@ -1,6 +1,6 @@
 package org.sdm;
 
-import org.sdm.crypto.TransactionSignature;
+import org.sdm.crypto.Signer;
 
 import java.io.*;
 import java.security.PrivateKey;
@@ -21,7 +21,7 @@ public class Transaction implements Serializable {
 	}
 
 	public void sign(PrivateKey privateKey) {
-		TransactionSignature ts = new TransactionSignature();
+		Signer ts = new Signer();
 		byte[] diamondBytes = new byte[0];
 		try {
 			diamondBytes = diamond.getDiamondBytes();
