@@ -3,7 +3,9 @@ package org.sdm;
 import org.sdm.crypto.Signer;
 
 import java.io.*;
+import java.nio.ByteBuffer;
 import java.security.PrivateKey;
+import java.time.Instant;
 import java.util.Arrays;
 
 /**
@@ -14,10 +16,12 @@ public class Transaction implements Serializable {
 	private DiamondSpec diamond;
 	private byte[] destinationAddress;
 	private byte[] signature;
+	private long timestamp;
 
 	public Transaction(DiamondSpec diamond, byte[] destinationAddress) {
 		this.diamond = diamond;
 		this.destinationAddress = destinationAddress;
+		this.timestamp = Instant.now().getEpochSecond();
 	}
 
 	public void sign(PrivateKey privateKey) {
@@ -33,9 +37,11 @@ public class Transaction implements Serializable {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		byte[] concat = new byte[destinationAddress.length + diamondBytes.length];
+		byte[] timestamp = ByteBuffer.allocate(Long.SIZE / Byte.SIZE).putLong(this.timestamp).array();
+		byte[] concat = new byte[destinationAddress.length + diamondBytes.length + timestamp.length];
 		System.arraycopy(destinationAddress, 0, concat, 0, destinationAddress.length);
 		System.arraycopy(diamondBytes, 0, concat, destinationAddress.length, diamondBytes.length);
+		System.arraycopy(timestamp, 0, concat, destinationAddress.length + diamondBytes.length, timestamp.length);
 		return concat;
 	}
 
@@ -76,6 +82,10 @@ public class Transaction implements Serializable {
 		return destinationAddress;
 	}
 
+	public long getTimestamp() {
+		return timestamp;
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
@@ -83,11 +93,19 @@ public class Transaction implements Serializable {
 
 		Transaction that = (Transaction) o;
 
+		if (timestamp != that.timestamp) return false;
+		if (!diamond.equals(that.diamond)) return false;
+		if (!Arrays.equals(destinationAddress, that.destinationAddress)) return false;
 		return Arrays.equals(signature, that.signature);
 	}
 
 	@Override
 	public int hashCode() {
-		return Arrays.hashCode(signature);
+		int result = diamond.hashCode();
+		result = 31 * result + Arrays.hashCode(destinationAddress);
+		result = 31 * result + Arrays.hashCode(signature);
+		result = 31 * result + (int) (timestamp ^ (timestamp >>> 32));
+		return result;
 	}
+
 }
