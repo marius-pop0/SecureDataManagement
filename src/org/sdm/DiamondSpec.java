@@ -1,6 +1,8 @@
 package org.sdm;
 
 import java.io.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 public class DiamondSpec implements Serializable {
 
@@ -21,6 +23,8 @@ public class DiamondSpec implements Serializable {
 	private String laserInscription;
 	private String origin;
 	private boolean natural;
+
+	private byte[] id;
 
 	public DiamondSpec(long date,
 					   int reportNr,
@@ -57,6 +61,13 @@ public class DiamondSpec implements Serializable {
 		this.laserInscription = laserInscription;
 		this.origin = origin;
 		this.natural = natural;
+
+		try {
+			MessageDigest digest = MessageDigest.getInstance("SHA-256");
+			this.id = digest.digest(getDiamondBytes());
+		} catch (NoSuchAlgorithmException | IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public long getDate() {
@@ -125,6 +136,10 @@ public class DiamondSpec implements Serializable {
 
 	public boolean isNatural() {
 		return natural;
+	}
+
+	public byte[] getId() {
+		return id;
 	}
 
 	public byte[] getDiamondBytes() throws IOException {

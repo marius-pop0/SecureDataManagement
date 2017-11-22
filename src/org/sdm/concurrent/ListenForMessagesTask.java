@@ -32,10 +32,6 @@ public class ListenForMessagesTask implements Runnable {
 				Message msg = (Message) ois.readObject();
 				String type = msg.getType();
 				switch (type) {
-					case "b": //block
-						//process new block
-						//check if equals latest block, then do conflict resolution
-						break;
 					case "tx": //transaction
 						Transaction t = (Transaction) msg.getObject();
 						node.processNewTransaction(t);

@@ -7,6 +7,7 @@ import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.util.Arrays;
 
 public class Block implements Serializable {
@@ -16,12 +17,14 @@ public class Block implements Serializable {
 	private long timestamp;
 	private byte[] data;
 	private String hash;
+	private PublicKey publicKey;
 
-	public Block(int index, String previousHash, long timestamp, byte[] data) {
+	public Block(int index, String previousHash, long timestamp, byte[] data, PublicKey publicKey) {
 		this.index = index;
 		this.previousHash = previousHash;
 		this.timestamp = timestamp;
 		this.data = data;
+		this.publicKey = publicKey;
 		this.hash = calculateHash();
 	}
 
@@ -44,6 +47,7 @@ public class Block implements Serializable {
 			outputStream.write(previousHash.getBytes(StandardCharsets.UTF_8));
 			outputStream.write(timestamp);
 			outputStream.write(data);
+			outputStream.write(publicKey.getEncoded());
 			concatBytes = outputStream.toByteArray();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -67,6 +71,10 @@ public class Block implements Serializable {
 
 	public byte[] getData() {
 		return data;
+	}
+
+	public PublicKey getPublicKey() {
+		return publicKey;
 	}
 
 	public String getHash() {

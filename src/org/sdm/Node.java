@@ -2,13 +2,17 @@ package org.sdm;
 
 import org.sdm.concurrent.ConcurrentArrayList;
 import org.sdm.concurrent.ListenForNodesTask;
-import org.sdm.concurrent.MonitorTransactionQueueTask;
+import org.sdm.concurrent.ForgeTask;
+import org.sdm.crypto.Encryption;
 import org.sdm.message.Message;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.security.*;
 import java.security.spec.ECGenParameterSpec;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -148,7 +152,7 @@ public class Node {
 	}
 
 	private void monitorTransactions() {
-		pool.execute(() -> new MonitorTransactionQueueTask(this, pendingTransactions));
+		pool.execute(() -> new ForgeTask(this, pendingTransactions));
 	}
 
 	public void processNewTransaction(Transaction t) {
@@ -191,6 +195,9 @@ public class Node {
 			if (latestBlockReceived.getIndex() > latestBlock.getIndex()) {
 
 				if (latestBlock.getHash().equals(latestBlockReceived.getPreviousHash())) {
+
+					if(!validHit(latestBlockReceived)) return;
+
 					blockchain.addBlock(latestBlockReceived);
 					Transaction t = Transaction.deserialize(latestBlockReceived.getData());
 					pendingTransactions.remove(t);
@@ -208,6 +215,34 @@ public class Node {
 
 			}
 		}
+	}
+
+	public boolean validHit(Block block) {
+		long balance = blockchain.getBalanceByPublicKey(block.getPublicKey());
+		long prevTimestamp = blockchain.getLatestBlock().getTimestamp();
+		long currentSeconds = Instant.now().getEpochSecond();
+		long timeSinceLastBlock = currentSeconds - prevTimestamp;
+		long estimatedTarget = balance * timeSinceLastBlock * 1000;	//TODO: improve calculation???
+		long hit = calculateHit(block);
+
+		return hit < estimatedTarget - 6000;	//TODO: how much extra time to approve??
+	}
+
+	public long calculateHit(Block block) {
+		byte[] hash = new BigInteger(block.getHash(), 16).toByteArray();
+		byte[] signature = new Encryption().encrypt(block.getPublicKey(), hash);
+		long hit = -1;
+
+		try {
+			byte[] val = MessageDigest.getInstance("SHA-256").digest(signature);
+			byte[] first4 = Arrays.copyOfRange(val, 0, 4);
+			double value = ByteBuffer.wrap(first4).getDouble();
+			hit = new Double(value).longValue();
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		}
+
+		return hit;
 	}
 
 	private void addToWallet(Transaction t) {

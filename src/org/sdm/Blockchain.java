@@ -1,7 +1,13 @@
 package org.sdm;
 
+import org.sdm.crypto.Signer;
+
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 
@@ -14,12 +20,12 @@ public class Blockchain {
 		blockchain.add(createGenesisBlock());
 	}
 
-	public synchronized Block generateNewBlock(Transaction t) {
+	public synchronized Block generateNewBlock(Node node, Transaction t) {
 		Block latest = getLatestBlock();
-		int nextIndex = blockchain.size();
+		int nextIndex = latest.getIndex() + 1;
 		long nextTimestamp = Instant.now().getEpochSecond();
 		byte[] data = t.getTransactionBytes();
-		return new Block(nextIndex, latest.getHash(), nextTimestamp, data);
+		return new Block(nextIndex, latest.getHash(), nextTimestamp, data, node.getWallet().getPublicKey());
 	}
 
 	public synchronized Block getLatestBlock() {
@@ -55,7 +61,37 @@ public class Blockchain {
 
 		byte[] bytes = t.getTransactionBytes();
 
-		return new Block(0, previousHash.toString(), genesis, bytes);
+		return new Block(0, previousHash.toString(), genesis, bytes, null);    //TODO: public key of server
+	}
+
+	public synchronized int getBalanceByPublicKey(PublicKey publicKey) {
+		MessageDigest digest = null;
+		try {
+			digest = MessageDigest.getInstance("SHA-256");
+		} catch (NoSuchAlgorithmException ignored) {
+		}
+		byte[] address = digest.digest(publicKey.getEncoded());
+		Signer signer = new Signer();
+		List<DiamondSpec> owned = new ArrayList<>();
+		List<DiamondSpec> sent = new ArrayList<>();
+
+		for (int i = blockchain.size() - 1; i >= 0; i--) {
+			Block block = blockchain.get(i);
+			Transaction t = Transaction.deserialize(block.getData());
+
+			byte[] sig = t.getSignature();
+			boolean sigMatch = signer.verifySignature(publicKey, t.getData(), sig);
+			if (sigMatch) {
+				sent.add(t.getDiamond());
+			}
+
+			if (Arrays.equals(address, t.getDestinationAddress()) &&
+					!sent.contains(t.getDiamond())) {
+				owned.add(t.getDiamond());
+			}
+		}
+
+		return owned.size();
 	}
 
 	public synchronized boolean addBlock(Block candidate) {

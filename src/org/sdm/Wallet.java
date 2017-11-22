@@ -48,6 +48,7 @@ public class Wallet {
 			}
 		}
 
+		this.balance = owned;
 		return owned;
 	}
 
