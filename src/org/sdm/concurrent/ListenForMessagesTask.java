@@ -33,6 +33,7 @@ public class ListenForMessagesTask implements Runnable {
 				String type = msg.getType();
 				switch (type) {
 					case "tx": //transaction
+						System.out.println("received transaction");
 						Transaction t = (Transaction) msg.getObject();
 						node.processNewTransaction(t);
 						break;

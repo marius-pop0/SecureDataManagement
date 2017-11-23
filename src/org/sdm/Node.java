@@ -1,15 +1,20 @@
 package org.sdm;
 
 import org.sdm.concurrent.ConcurrentArrayList;
-import org.sdm.concurrent.ListenForNodesTask;
 import org.sdm.concurrent.ForgeTask;
+import org.sdm.concurrent.ListenForMessagesTask;
+import org.sdm.concurrent.ListenForNodesTask;
 import org.sdm.crypto.Encryption;
+import org.sdm.crypto.Signer;
 import org.sdm.message.Message;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.math.BigInteger;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.security.*;
 import java.security.spec.ECGenParameterSpec;
 import java.time.Instant;
@@ -32,12 +37,16 @@ public class Node {
 
 	private PublicKey publicKey;
 	private PrivateKey privateKey;
+	private byte[] serverToken;
+	private PublicKey serverPublicKey;
 
 	private byte[] address;
 	private Wallet wallet;
 
 	private Blockchain blockchain;
 	private ConcurrentArrayList<Transaction> unspent;
+
+	private NodeSocket server;
 
 	private final Object lock = new Object();
 
@@ -51,11 +60,12 @@ public class Node {
 
 		generateKeys();
 		generateAddress();
+		connectToServer();
+
 
 		listenForNodes(port);
 		monitorTransactions();
 
-		//TODO: save wallet to file & load wallet from file
 		this.wallet = new Wallet(this, this.publicKey, this.privateKey);
 
 		Runtime.getRuntime().addShutdownHook(new Thread(pool::shutdown));
@@ -78,8 +88,33 @@ public class Node {
 
 		this.publicKey = publicKey;
 		this.privateKey = privateKey;
+	}
 
-		//TODO: announce public key to server
+	private void connectToServer() {
+		try {
+			Socket s = new Socket("localhost", 9999);
+			this.server = new NodeSocket(s);
+
+			ObjectInputStream inputs = this.server.getObjectInputStream();
+			ObjectOutputStream outputs = this.server.getObjectOutputStream();
+
+			Message msg = new Message("id", this.address);
+			outputs.writeObject(msg);
+
+			msg = new Message("register", this.publicKey);
+			outputs.writeObject(msg);
+
+			msg = (Message) inputs.readObject();
+			ArrayList<Object> list = (ArrayList<Object>) msg.getObject();
+			this.serverPublicKey = (PublicKey) list.get(0);
+			this.serverToken = (byte[]) list.get(1);
+			System.out.println("Got server token");
+
+			new Thread(new ListenForMessagesTask(this, server)).start();
+
+		} catch (IOException | ClassNotFoundException e) {
+			e.printStackTrace();
+		}
 	}
 
 	private void generateAddress() {
@@ -95,15 +130,31 @@ public class Node {
 		try {
 			Socket socket = new Socket("localhost", port);
 			NodeSocket nodeSocket = new NodeSocket(socket);
-			//TODO: ADDRESS!!!!! ALSO WALLET!!!
-			nodes.put("address", nodeSocket);
+			int id = nodes.keySet().size() + 1;
+			nodes.put(String.valueOf(id), nodeSocket);
+			Message msg = new Message("id", Integer.toString(id));
+			nodeSocket.getObjectOutputStream().writeObject(msg);
+			System.out.println("connected to port " + port);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 
-	public void sendDiamond(DiamondSpec diamond, byte[] address) {
-		Transaction transaction = new Transaction(diamond, address);
+	public void createDiamond(DiamondSpec diamond) {
+		ArrayList<Object> list = new ArrayList<>(2);
+		list.add(Base64.getEncoder().encodeToString(this.address));
+		list.add(diamond);
+		Message msg = new Message("diamond", list);
+		ObjectOutputStream oos = this.server.getObjectOutputStream();
+		try {
+			oos.writeObject(msg);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void sendDiamond(Transaction t, byte[] address) {
+		Transaction transaction = new Transaction(t.getDiamond(), address, this.publicKey, this.serverToken, t.getPreviousTransaction());
 		broadcastTransaction(transaction);
 	}
 
@@ -148,26 +199,39 @@ public class Node {
 	}
 
 	private void listenForNodes(int port) {
-		pool.execute(() -> new ListenForNodesTask(this, port, pool, nodes));
+		pool.execute(new ListenForNodesTask(this, port, pool, nodes));
 	}
 
 	private void monitorTransactions() {
-		pool.execute(() -> new ForgeTask(this, pendingTransactions));
+		pool.execute(new ForgeTask(this, pendingTransactions));
 	}
 
 	public void processNewTransaction(Transaction t) {
-		//TODO: if tx signed by server: 1) add to unspent, 2) add to pending txs, 3) broadcast, 4) add to wallet if mine
+		Signer signer = new Signer();
+		if (signer.verifySignature(this.serverPublicKey, t.getPublicKey().getEncoded(), t.getServerToken())) {
+			unspent.add(t);
+			pendingTransactions.add(t);
+			broadcastTransaction(t);
+			addToWallet(t);
+			return;
+		}
+
+		if (signer.verifySignature(serverPublicKey, t.getPublicKey().getEncoded(), t.getServerToken())) {
+			return;
+		}
 
 		for (Transaction tx : pendingTransactions) {
 			if (tx.equals(t)) return;    //check if tx is already pending
 			if (tx.getDiamond().equals(t.getDiamond()))
 				return;    //check if diamond is already in pending tx (tx not confirmed yet)
+			if (Arrays.equals(tx.getPreviousTransaction(), t.getPreviousTransaction())) return;
 		}
 
 		//check if tx already exists in blockchain
 		for (Block block : blockchain.getChain()) {
 			Transaction tr = Transaction.deserialize(block.getData());
 			if (tr.equals(t)) return;
+			if (Arrays.equals(tr.getPreviousTransaction(), t.getPreviousTransaction())) return;
 		}
 
 		//check if tx has already been spent
@@ -196,7 +260,7 @@ public class Node {
 
 				if (latestBlock.getHash().equals(latestBlockReceived.getPreviousHash())) {
 
-					if(!validHit(latestBlockReceived)) return;
+					if (!validHit(latestBlockReceived)) return;
 
 					blockchain.addBlock(latestBlockReceived);
 					Transaction t = Transaction.deserialize(latestBlockReceived.getData());
@@ -210,7 +274,7 @@ public class Node {
 					queryBlockchain();
 				} else {
 					blockchain.replaceChain(chain);
-					wallet.computeOwnedDiamonds();
+					wallet.computeOwnedTransactions();
 				}
 
 			}
@@ -222,22 +286,25 @@ public class Node {
 		long prevTimestamp = blockchain.getLatestBlock().getTimestamp();
 		long currentSeconds = Instant.now().getEpochSecond();
 		long timeSinceLastBlock = currentSeconds - prevTimestamp;
-		long estimatedTarget = balance * timeSinceLastBlock * 1000;	//TODO: improve calculation???
+		long estimatedTarget = balance * timeSinceLastBlock * 1000;    //TODO: improve calculation???
 		long hit = calculateHit(block);
 
-		return hit < estimatedTarget - 6000;	//TODO: how much extra time to approve??
+		return hit < estimatedTarget - 6000;    //TODO: how much extra time to approve??
 	}
 
 	public long calculateHit(Block block) {
 		byte[] hash = new BigInteger(block.getHash(), 16).toByteArray();
-		byte[] signature = new Encryption().encrypt(block.getPublicKey(), hash);
+		byte[] signature = new Encryption().encrypt(this.getPublicKey(), hash);
 		long hit = -1;
 
 		try {
 			byte[] val = MessageDigest.getInstance("SHA-256").digest(signature);
-			byte[] first4 = Arrays.copyOfRange(val, 0, 4);
-			double value = ByteBuffer.wrap(first4).getDouble();
-			hit = new Double(value).longValue();
+			byte[] first8 = Arrays.copyOfRange(val, 0, 8);
+			ByteBuffer buffer = ByteBuffer.wrap(first8);
+			buffer.order(ByteOrder.LITTLE_ENDIAN);
+			hit = buffer.getLong();
+			hit = (long) (hit % Math.pow(10, 7));
+			hit = Math.abs(hit);
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();
 		}
@@ -248,8 +315,8 @@ public class Node {
 	private void addToWallet(Transaction t) {
 		//add to wallet if mine and not yet in wallet
 		if (Arrays.equals(this.address, t.getDestinationAddress()))
-			if (!wallet.contains(t.getDiamond()))
-				wallet.getOwnedDiamonds().add(t.getDiamond());
+			if (!wallet.contains(t))
+				wallet.getOwnedTransactions().add(t);
 	}
 
 	public boolean isListening() {
@@ -276,6 +343,10 @@ public class Node {
 		return blockchain;
 	}
 
+	public byte[] getServerToken() {
+		return this.serverToken;
+	}
+
 	public void shutdown() {
 		isListening.set(false);
 		pool.shutdown();
@@ -286,6 +357,10 @@ public class Node {
 				e.printStackTrace();
 			}
 		}
+	}
+
+	public NodeSocket getServer() {
+		return server;
 	}
 
 }

@@ -1,17 +1,17 @@
 package org.sdm;
 
-import com.sun.security.ntlm.Server;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-import java.io.*;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.security.*;
+import java.security.spec.ECGenParameterSpec;
 import java.time.Instant;
+import java.util.Base64;
+import java.util.List;
 
 public class Main {
 
 	public static void main(String[] args) {
-		Blockchain blockchain = new Blockchain();
-
+		Security.addProvider(new BouncyCastleProvider());
 		DiamondSpec d = new DiamondSpec(Instant.now().getEpochSecond(),
 				1,
 				"round",
@@ -30,29 +30,22 @@ public class Main {
 				"Canada,",
 				true);
 
-		Transaction t = new Transaction(d, null);
+		Server server = new Server(9999);
+		Node a = new Node(12345);
+		Node b = new Node(12346);
+		a.connectToNode(12346);
 
-		boolean valid = false;
-		while (!valid) {
-			Block b = blockchain.generateNewBlock(t);
-			valid = blockchain.addBlock(b);
+		a.createDiamond(d);
+
+		while(b.getBlockchain().getChain().size() == 1);
+		printChain(b.getBlockchain().getChain());
+	}
+
+	private static void printChain(List<Block> chain) {
+		for(Block block : chain) {
+			System.out.println(block.getHash());
+			System.out.println("------------------------------------------------------------------------");
 		}
-
-		try{
-			ServerSocket server = new ServerSocket(9999);
-			while (true){
-
-				Socket serverClient = server.accept();
-				ServerClientThread connection = new ServerClientThread(serverClient);
-				connection.start();
-
-			}
-
-		}catch (Exception e){
-			System.err.println(e);
-		}
-
-
 	}
 
 }

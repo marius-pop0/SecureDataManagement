@@ -16,7 +16,7 @@ public class Wallet {
 	private Node node;
 	private PublicKey publicKey;
 	private PrivateKey privateKey;
-	private List<DiamondSpec> balance;
+	private List<Transaction> balance;
 
 	public Wallet(Node node, PublicKey publicKey, PrivateKey privateKey) {
 		this.node = node;
@@ -25,10 +25,10 @@ public class Wallet {
 		this.balance = new ArrayList<>();
 	}
 
-	public synchronized List<DiamondSpec> computeOwnedDiamonds() {
+	public synchronized List<Transaction> computeOwnedTransactions() {
 		Signer signer = new Signer();
 		List<Block> chain = node.getBlockchain().getChain();
-		List<DiamondSpec> owned = new ArrayList<>();
+		List<Transaction> owned = new ArrayList<>();
 		List<DiamondSpec> sent = new ArrayList<>();
 		//traverse chain in reverse order
 		//if tx sig matches my private key, tx was mine
@@ -44,7 +44,7 @@ public class Wallet {
 
 			if (Arrays.equals(node.getAddress(), t.getDestinationAddress()) &&
 					!sent.contains(t.getDiamond())) {
-				owned.add(t.getDiamond());
+				owned.add(t);
 			}
 		}
 
@@ -52,20 +52,20 @@ public class Wallet {
 		return owned;
 	}
 
-	public synchronized List<DiamondSpec> getOwnedDiamonds() {
+	public synchronized List<Transaction> getOwnedTransactions() {
 		if (balance == null) {
-			return computeOwnedDiamonds();
+			return computeOwnedTransactions();
 		}
 
 		return balance;
 	}
 
-	public synchronized void add(DiamondSpec diamond) {
-		balance.add(diamond);
+	public synchronized void add(Transaction t) {
+		balance.add(t);
 	}
 
-	public synchronized boolean contains(DiamondSpec diamond) {
-		return balance.contains(diamond);
+	public synchronized boolean contains(Transaction t) {
+		return balance.contains(t);
 	}
 
 	public PublicKey getPublicKey() {

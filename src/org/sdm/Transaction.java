@@ -5,6 +5,7 @@ import org.sdm.crypto.Signer;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.time.Instant;
 import java.util.Arrays;
 
@@ -13,15 +14,22 @@ import java.util.Arrays;
  */
 public class Transaction implements Serializable {
 
+	private PublicKey publicKey;
 	private DiamondSpec diamond;
 	private byte[] destinationAddress;
 	private byte[] signature;
 	private long timestamp;
+	private byte[] serverToken;
+	private byte[] previousTransaction;
+	//TODO: originating transaction
 
-	public Transaction(DiamondSpec diamond, byte[] destinationAddress) {
+	public Transaction(DiamondSpec diamond, byte[] destinationAddress, PublicKey publicKey, byte[] serverToken, byte[] previousTransaction) {
 		this.diamond = diamond;
 		this.destinationAddress = destinationAddress;
 		this.timestamp = Instant.now().getEpochSecond();
+		this.serverToken = serverToken;
+		this.publicKey = publicKey;
+		this.previousTransaction = previousTransaction;
 	}
 
 	public void sign(PrivateKey privateKey) {
@@ -38,10 +46,11 @@ public class Transaction implements Serializable {
 			e.printStackTrace();
 		}
 		byte[] timestamp = ByteBuffer.allocate(Long.SIZE / Byte.SIZE).putLong(this.timestamp).array();
-		byte[] concat = new byte[destinationAddress.length + diamondBytes.length + timestamp.length];
+		byte[] concat = new byte[destinationAddress.length + diamondBytes.length + timestamp.length + serverToken.length];
 		System.arraycopy(destinationAddress, 0, concat, 0, destinationAddress.length);
 		System.arraycopy(diamondBytes, 0, concat, destinationAddress.length, diamondBytes.length);
 		System.arraycopy(timestamp, 0, concat, destinationAddress.length + diamondBytes.length, timestamp.length);
+		System.arraycopy(serverToken, 0, concat, destinationAddress.length + diamondBytes.length + timestamp.length, serverToken.length);
 		return concat;
 	}
 
@@ -61,6 +70,10 @@ public class Transaction implements Serializable {
 			e.printStackTrace();
 		}
 		return bytes;
+	}
+
+	public byte[] getServerToken() {
+		return serverToken;
 	}
 
 	public static Transaction deserialize(byte[] bytes) {
@@ -108,4 +121,11 @@ public class Transaction implements Serializable {
 		return result;
 	}
 
+	public PublicKey getPublicKey() {
+		return publicKey;
+	}
+
+	public byte[] getPreviousTransaction() {
+		return previousTransaction;
+	}
 }

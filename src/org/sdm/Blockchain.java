@@ -1,13 +1,16 @@
 package org.sdm;
 
+import org.bouncycastle.jce.spec.ECKeySpec;
 import org.sdm.crypto.Signer;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
+import java.security.*;
+import java.security.spec.ECGenParameterSpec;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 
 
@@ -57,11 +60,20 @@ public class Blockchain {
 				"",
 				false);
 
-		Transaction t = new Transaction(d, new byte[]{0});
+		PublicKey publicKey = null;
+		try {
+			KeyFactory kf = KeyFactory.getInstance("ECDSA", "BC");
+			byte[] bytes = Base64.getDecoder().decode("MFYwEAYHKoZIzj0CAQYFK4EEAAoDQgAEmW4ACKX92n3qrytNKI2jya4G0rigW/HCdkf8SqFsFmqEocY8+6FWgT+3ukTDRIq7Gje5U2dXEUOsTUNk+OSS4Q==");
+			publicKey = kf.generatePublic(new X509EncodedKeySpec(bytes));
+		} catch (NoSuchAlgorithmException | NoSuchProviderException | InvalidKeySpecException e) {
+			e.printStackTrace();
+		}
+
+		Transaction t = new Transaction(d, new byte[]{0}, publicKey, new byte[]{0}, null);
 
 		byte[] bytes = t.getTransactionBytes();
 
-		return new Block(0, previousHash.toString(), genesis, bytes, null);    //TODO: public key of server
+		return new Block(0, previousHash.toString(), genesis, bytes, publicKey);    //TODO: public key of server
 	}
 
 	public synchronized int getBalanceByPublicKey(PublicKey publicKey) {

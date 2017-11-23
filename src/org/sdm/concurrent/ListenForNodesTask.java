@@ -2,11 +2,9 @@ package org.sdm.concurrent;
 
 import org.sdm.Node;
 import org.sdm.NodeSocket;
+import org.sdm.message.Message;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
@@ -38,16 +36,14 @@ public class ListenForNodesTask implements Runnable {
 	@Override
 	public void run() {
 		Socket socket;
-		InputStream in;
-		BufferedReader reader;
+		ObjectInputStream in;
 		while (this.node.isListening()) {
 			try {
 				socket = serverSocket.accept();
 				NodeSocket nodeSocket = new NodeSocket(socket);
-				in = socket.getInputStream();
-				reader = new BufferedReader(new InputStreamReader(in));
-
-				String id = reader.readLine();
+				in = nodeSocket.getObjectInputStream();
+				Message msg = (Message) in.readObject();
+				String id = (String) msg.getObject();
 				nodes.put(id, nodeSocket);
 				System.out.println(id + " CONNECTED");
 
@@ -59,7 +55,7 @@ public class ListenForNodesTask implements Runnable {
 				} catch (InterruptedException e1) {
 					e1.printStackTrace();
 				}
-			} catch (IOException e) {
+			} catch (IOException | ClassNotFoundException e) {
 				e.printStackTrace();
 				break;
 			}

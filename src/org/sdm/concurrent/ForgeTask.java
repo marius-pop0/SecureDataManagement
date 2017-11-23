@@ -24,18 +24,18 @@ public class ForgeTask implements Runnable {
 	public void run() {
 		while (node.isListening()) {
 			if (!transactions.isEmpty()) {
-				Transaction t = transactions.poll();
+				Transaction t = transactions.peek();
 
 				long hit = node.calculateHit(node.getBlockchain().getLatestBlock());
 				long target;
-				long balance = node.getWallet().getOwnedDiamonds().size();
+				long balance = node.getWallet().getOwnedTransactions().size();
 
 				while (node.isListening() && transactions.contains(t)) {
 					long prevTimestamp = node.getBlockchain().getLatestBlock().getTimestamp();
 					long currentSeconds = Instant.now().getEpochSecond();
 					long timeSinceLastBlock = currentSeconds - prevTimestamp;
 
-					target = balance * timeSinceLastBlock * 1000;    //TODO: improve calculation?
+					target = (balance + 1) * timeSinceLastBlock * 1000;    //TODO: improve calculation?
 
 					if (hit < target) break;
 

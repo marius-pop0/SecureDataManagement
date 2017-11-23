@@ -13,14 +13,10 @@ import java.security.*;
  */
 public class Encryption {
 
-	public Encryption() {
-		Security.addProvider(new BouncyCastleProvider());
-	}
-
 	public byte[] encrypt(Key key, byte[] input) {
 		byte[] output = null;
 		try {
-			Cipher c = Cipher.getInstance("ECDSA", "BC");
+			Cipher c = Cipher.getInstance("ECIES", "BC");
 			c.init(Cipher.ENCRYPT_MODE, key);
 			output = c.doFinal(input);
 		} catch (NoSuchAlgorithmException
