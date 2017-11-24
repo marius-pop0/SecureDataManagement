@@ -1,10 +1,9 @@
-package org.sdm;
+package org.sdm.blockchain;
 
-import org.bouncycastle.jce.spec.ECKeySpec;
+import org.sdm.node.Node;
 import org.sdm.crypto.Signer;
 
 import java.security.*;
-import java.security.spec.ECGenParameterSpec;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.time.Instant;

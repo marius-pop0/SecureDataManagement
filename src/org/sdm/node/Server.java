@@ -1,6 +1,8 @@
-package org.sdm;
+package org.sdm.node;
 
 
+import org.sdm.blockchain.DiamondSpec;
+import org.sdm.blockchain.Transaction;
 import org.sdm.crypto.Signer;
 import org.sdm.message.Message;
 
@@ -17,7 +19,7 @@ import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-class Server {
+public class Server {
 
 	private ServerSocket serverSocket;
 	private PublicKey publicKey;

@@ -1,7 +1,7 @@
 package org.sdm.concurrent;
 
-import org.sdm.Node;
-import org.sdm.NodeSocket;
+import org.sdm.node.Node;
+import org.sdm.node.NodeSocket;
 import org.sdm.message.Message;
 
 import java.io.*;

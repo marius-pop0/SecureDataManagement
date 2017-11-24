@@ -1,4 +1,4 @@
-package org.sdm;
+package org.sdm.blockchain;
 
 import org.sdm.crypto.Signer;
 

@@ -1,5 +1,9 @@
-package org.sdm;
+package org.sdm.node;
 
+import org.sdm.blockchain.Block;
+import org.sdm.blockchain.Blockchain;
+import org.sdm.blockchain.DiamondSpec;
+import org.sdm.blockchain.Transaction;
 import org.sdm.concurrent.ConcurrentArrayList;
 import org.sdm.concurrent.ForgeTask;
 import org.sdm.concurrent.ListenForMessagesTask;

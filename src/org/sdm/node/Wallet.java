@@ -1,5 +1,8 @@
-package org.sdm;
+package org.sdm.node;
 
+import org.sdm.blockchain.Block;
+import org.sdm.blockchain.DiamondSpec;
+import org.sdm.blockchain.Transaction;
 import org.sdm.crypto.Signer;
 
 import java.security.PrivateKey;

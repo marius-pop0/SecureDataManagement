@@ -1,4 +1,4 @@
-package org.sdm;
+package org.sdm.node;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;

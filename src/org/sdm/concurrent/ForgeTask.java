@@ -1,8 +1,8 @@
 package org.sdm.concurrent;
 
-import org.sdm.Block;
-import org.sdm.Node;
-import org.sdm.Transaction;
+import org.sdm.blockchain.Block;
+import org.sdm.node.Node;
+import org.sdm.blockchain.Transaction;
 
 import java.time.Instant;
 import java.util.Deque;

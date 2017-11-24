@@ -1,4 +1,4 @@
-package org.sdm;
+package org.sdm.blockchain;
 
 import javax.xml.bind.DatatypeConverter;
 import java.io.ByteArrayOutputStream;

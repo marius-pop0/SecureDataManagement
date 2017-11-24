@@ -1,9 +1,9 @@
 package org.sdm.concurrent;
 
-import org.sdm.Block;
-import org.sdm.Node;
-import org.sdm.NodeSocket;
-import org.sdm.Transaction;
+import org.sdm.blockchain.Block;
+import org.sdm.node.Node;
+import org.sdm.node.NodeSocket;
+import org.sdm.blockchain.Transaction;
 import org.sdm.message.Message;
 
 import java.io.IOException;
