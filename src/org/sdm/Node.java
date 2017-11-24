@@ -142,6 +142,7 @@ public class Node {
 	}
 
 	public void createDiamond(DiamondSpec diamond) {
+		if (!validDiamond(diamond)) return;
 		ArrayList<Object> list = new ArrayList<>(2);
 		list.add(Base64.getEncoder().encodeToString(this.address));
 		list.add(diamond);
@@ -154,13 +155,22 @@ public class Node {
 		}
 	}
 
+	private boolean validDiamond(DiamondSpec diamond) {
+		for (Block block : blockchain.getChain()) {
+			DiamondSpec d = Transaction.deserialize(block.getData()).getDiamond();
+			if (diamond.equals(d)) return false;
+		}
+		return true;
+	}
+
 	public void sendDiamond(Transaction t, byte[] address) {
 		Transaction transaction = new Transaction(t.getDiamond(), address, this.publicKey, this.serverToken, t.getPreviousTransaction());
+		transaction.sign(this.privateKey);
+		processNewTransaction(t);
 		broadcastTransaction(transaction);
 	}
 
 	private void broadcastTransaction(Transaction transaction) {
-		transaction.sign(this.privateKey);
 		Message msg = new Message("tx", transaction);
 		for (NodeSocket socket : nodes.values()) {
 			try {
