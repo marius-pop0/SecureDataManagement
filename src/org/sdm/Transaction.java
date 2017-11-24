@@ -99,6 +99,10 @@ public class Transaction implements Serializable {
 		return timestamp;
 	}
 
+	public void setTimestamp(long timestamp) {
+		this.timestamp = timestamp;
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;

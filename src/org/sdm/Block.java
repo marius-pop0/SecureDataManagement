@@ -91,7 +91,9 @@ public class Block implements Serializable {
 		if (index != block.index) return false;
 		if (timestamp != block.timestamp) return false;
 		if (!previousHash.equals(block.previousHash)) return false;
-		if (!Arrays.equals(data, block.data)) return false;
+		Transaction a = Transaction.deserialize(this.data);
+		Transaction b = Transaction.deserialize(block.data);
+		if (!a.equals(b)) return false;
 		return hash.equals(block.hash);
 	}
 

@@ -152,6 +152,7 @@ class Server {
 		Signer signer = new Signer();
 		byte[] token = signer.generateSignature(this.privateKey, this.publicKey.getEncoded());
 		Transaction t = new Transaction(diamond, address, this.publicKey, token, null);
+		t.sign(privateKey);
 		try {
 			for (Map.Entry entry : nodes.entrySet()) {
 				Message msg = new Message("tx", t);

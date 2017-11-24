@@ -35,8 +35,9 @@ public class ForgeTask implements Runnable {
 					long currentSeconds = Instant.now().getEpochSecond();
 					long timeSinceLastBlock = currentSeconds - prevTimestamp;
 
-					target = (balance + 1) * timeSinceLastBlock * 1000;    //TODO: improve calculation?
+					target = (balance + 1) * timeSinceLastBlock * 5000;    //TODO: improve calculation?
 
+					System.out.println(hit + "  --  " + target);
 					if (hit < target) break;
 
 					try {

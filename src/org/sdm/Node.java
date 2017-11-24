@@ -135,6 +135,7 @@ public class Node {
 			Message msg = new Message("id", Integer.toString(id));
 			nodeSocket.getObjectOutputStream().writeObject(msg);
 			System.out.println("connected to port " + port);
+			pool.execute(new ListenForMessagesTask(this, nodeSocket));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -187,7 +188,7 @@ public class Node {
 		broadcastChain(list);
 	}
 
-	private void queryBlockchain() {
+	public void queryBlockchain() {
 		Message msg = new Message("query", null);
 		for (NodeSocket socket : nodes.values()) {
 			try {
@@ -211,7 +212,7 @@ public class Node {
 		if (signer.verifySignature(this.serverPublicKey, t.getPublicKey().getEncoded(), t.getServerToken())) {
 			unspent.add(t);
 			pendingTransactions.add(t);
-			broadcastTransaction(t);
+//			broadcastTransaction(t);
 			addToWallet(t);
 			return;
 		}
@@ -247,7 +248,7 @@ public class Node {
 
 		pendingTransactions.add(t);
 		addToWallet(t);
-		broadcastTransaction(t);
+//		broadcastTransaction(t);
 	}
 
 	public void processNewChain(List<Block> chain) {
@@ -303,7 +304,7 @@ public class Node {
 			ByteBuffer buffer = ByteBuffer.wrap(first8);
 			buffer.order(ByteOrder.LITTLE_ENDIAN);
 			hit = buffer.getLong();
-			hit = (long) (hit % Math.pow(10, 7));
+			hit = (long) (hit % Math.pow(10, 6));
 			hit = Math.abs(hit);
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();

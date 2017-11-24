@@ -37,12 +37,13 @@ public class Blockchain {
 
 	private synchronized static Block createGenesisBlock() {
 		long genesis = 1510398671L; //11-11-2017 11:11:11 GMT
+		genesis = Instant.now().getEpochSecond() / 100 * 100; //11-11-2017 11:11:11 GMT
 		StringBuilder previousHash = new StringBuilder();
 		for (int i = 0; i < 64; i++) {
 			previousHash.append("0");
 		}
 
-		DiamondSpec d = new DiamondSpec(Instant.now().getEpochSecond(),
+		DiamondSpec d = new DiamondSpec(genesis,
 				-1,
 				"",
 				-1,
@@ -70,10 +71,11 @@ public class Blockchain {
 		}
 
 		Transaction t = new Transaction(d, new byte[]{0}, publicKey, new byte[]{0}, null);
+		t.setTimestamp(genesis);
 
 		byte[] bytes = t.getTransactionBytes();
 
-		return new Block(0, previousHash.toString(), genesis, bytes, publicKey);    //TODO: public key of server
+		return new Block(0, previousHash.toString(), genesis, bytes, publicKey);
 	}
 
 	public synchronized int getBalanceByPublicKey(PublicKey publicKey) {
@@ -86,9 +88,11 @@ public class Blockchain {
 		Signer signer = new Signer();
 		List<DiamondSpec> owned = new ArrayList<>();
 		List<DiamondSpec> sent = new ArrayList<>();
+		Block genesisBlock = createGenesisBlock();
 
 		for (int i = blockchain.size() - 1; i >= 0; i--) {
 			Block block = blockchain.get(i);
+			if(block.equals(genesisBlock)) continue;
 			Transaction t = Transaction.deserialize(block.getData());
 
 			byte[] sig = t.getSignature();
