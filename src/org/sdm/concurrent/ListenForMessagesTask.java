@@ -27,36 +27,38 @@ public class ListenForMessagesTask implements Runnable {
 	@Override
 	public void run() {
 		ObjectInputStream ois = socket.getObjectInputStream();
-		while (node.isListening()) {
-			try {
-				Message msg = (Message) ois.readObject();
-				String type = msg.getType();
-				switch (type) {
-					case "tx": //transaction
-						System.out.println("received transaction");
-						Transaction t = (Transaction) msg.getObject();
-						node.processNewTransaction(t);
-						break;
-					case "chain":
-						List<Block> chain = (List<Block>) msg.getObject();
-						node.processNewChain(chain);
-					case "query":
-						List<Block> currentChain = node.getBlockchain().getChain();
-						Message msgToSend = new Message("chain", currentChain);
-						socket.getObjectOutputStream().writeObject(msgToSend);
-						break;
-					default:
-						break;
-				}
-			} catch (SocketTimeoutException e) {
+		synchronized (ois) {
+			while (node.isListening()) {
+				try {
+					Message msg = (Message) ois.readObject();
+					String type = msg.getType();
+					switch (type) {
+						case "tx": //transaction
+							System.out.println("received transaction");
+							Transaction t = (Transaction) msg.getObject();
+							node.processNewTransaction(t);
+							break;
+						case "chain":
+							List<Block> chain = (List<Block>) msg.getObject();
+							node.processNewChain(chain);
+						case "query":
+							List<Block> currentChain = node.getBlockchain().getChain();
+							Message msgToSend = new Message("chain", currentChain);
+							socket.getObjectOutputStream().writeObject(msgToSend);
+							break;
+						default:
+							break;
+					}
+				} catch (SocketTimeoutException e) {
 //                try {
 //                    Thread.sleep(10);
 //                } catch (InterruptedException e1) {
 //                    e1.printStackTrace();
 //                }
-			} catch (IOException | ClassNotFoundException e) {
-				e.printStackTrace();
-				break;
+				} catch (IOException | ClassNotFoundException e) {
+					e.printStackTrace();
+					break;
+				}
 			}
 		}
 	}

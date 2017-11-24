@@ -46,19 +46,31 @@ public class Main {
 				true);
 
 		Server server = new Server(9999);
-		Node a = new Node(12345);
+		Node a = new Node(8888);
 
 		a.createDiamond(d);
 		a.createDiamond(d);
-		a.createDiamond(d);
 		a.createDiamond(e);
-		a.createDiamond(d);
 
 		while (a.getBlockchain().getChain().size() != 3) {
 			sleep();
 		}
 		printChain(a.getBlockchain().getChain());
 		System.out.println();
+
+		Node b = new Node(7777);
+
+		a.sendDiamond(a.getUnspent().get(0), b.getAddress());
+
+		while (a.getBlockchain().getChain().size() != 4) {
+			sleep();
+		}
+		printChain(a.getBlockchain().getChain());
+		System.out.println();
+
+		DiamondSpec d1 = Transaction.deserialize(a.getBlockchain().getChain().get(1).getData()).getDiamond();
+		DiamondSpec d2 = Transaction.deserialize(a.getBlockchain().getChain().get(1).getData()).getDiamond();
+		System.out.println("same diamonds? -> " + d1.equals(d2));
 	}
 
 	private static void printChain(List<Block> chain) {

@@ -348,6 +348,10 @@ public class Node {
 		return this.serverToken;
 	}
 
+	public ConcurrentArrayList<Transaction> getUnspent() {
+		return unspent;
+	}
+
 	public void shutdown() {
 		isListening.set(false);
 		pool.shutdown();
